@@ -5,6 +5,7 @@
 #include "esp_bt.h"
 #include "esp_bt_main.h"
 #include "esp_wifi.h"
+#include "lib.hpp"
 
 // ハードウェアシリアルの準備
 HardwareSerial MySerial0(0);
@@ -22,10 +23,6 @@ const int BIGTIMEOUT = 10000;
 int POSTTIMEOUT = 60000;
 int NORMALTIMEOUT = 5000;
 const int SMALLTIMEOUT = 1000;
-
-// Forward declarations
-void serial_send(float distance);
-void esp32c3_deepsleep(uint64_t sleep_time);
 
 unsigned char data[4] = {};
 
