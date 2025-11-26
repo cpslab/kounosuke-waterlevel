@@ -6,79 +6,135 @@
 #include "esp_bt_main.h"
 #include "esp_wifi.h"
 #include "lib.hpp"
+#include "sensor.hpp"
 
-// ハードウェアシリアルの準備
-HardwareSerial MySerial0(0);
-HardwareSerial MySerial1(1);
+// =============== ハードウェアシリアルの設定 ===============
+HardwareSerial MySerial0(0);  // LTE モデム通信
+HardwareSerial MySerial1(1);  // 超音波センサー通信
 
-const int SWITCH_PIN = 2; // Xiao C3のGPIO2ピンを使用
+// =============== GPIO ピン設定 ===============
+const int SWITCH_PIN = 2;  // センサー電源制御（GPIO 2）
 
-// coprocessor領域に変数を宣言することでスリープ復帰後も値が保持できる
-RTC_DATA_ATTR int counter = 0; // RTC
+// =============== 通信速度とタイムアウト ===============
+const int PORTLATE = 57600;     // LTE モデムのボーレート
+int POSTTIMEOUT = 60000;        // HTTP POST タイムアウト（ミリ秒）
+int NORMALTIMEOUT = 5000;       // AT コマンドタイムアウト（ミリ秒）
 
-const uint64_t SLEEPTIME_SECONDS = 900; // 秒(3600→1時間)
+// =============== スリープ設定 ===============
+const uint64_t SLEEPTIME_SECONDS = 900;  // ディープスリープ時間（15 分）
+RTC_DATA_ATTR int counter = 0;           // RTC 領域の変数（スリープ後も保持）
 
-const int PORTLATE = 57600;
-const int BIGTIMEOUT = 10000;
-int POSTTIMEOUT = 60000;
-int NORMALTIMEOUT = 5000;
-const int SMALLTIMEOUT = 1000;
+// =============== センサーデータ ===============
+unsigned char sensor_data[4] = {};  // 超音波センサーの 4 バイト
+int sensor_read_count = 0;          // センサー読み込み回数
+float last_distance = -1;           // 最後の有効な距離値
 
-unsigned char data[4] = {};
-
-int count = 0;
-
-float distance = -1;
-
-int failureCount;
-
+/**
+ * 初期化処理
+ * シリアル通信、GPIO、グローバル変数を初期化
+ */
 void setup() {
+  // デバッグ用シリアル
   Serial.begin(PORTLATE);
-  // Configure MySerial0 on pins TX=6 and RX=7 (-1, -1 means use the default)
+
+  // LTE モデム通信（MySerial0）- デフォルトピン TX=6, RX=7
   MySerial0.begin(PORTLATE, SERIAL_8N1, -1, -1);
+
+  // 超音波センサー通信（MySerial1）- GPIO 9, 10（9600 ボー）
   MySerial1.begin(9600, SERIAL_8N1, 9, 10);
-  pinMode(SWITCH_PIN, OUTPUT); // ピンを出力として設定
-  digitalWrite(SWITCH_PIN, HIGH);
-  distance = -1;
-  count = 0;
-  failureCount = 0; // Counter to track consecutive failures
+
+  // センサー電源制御ピンを初期化
+  pinMode(SWITCH_PIN, OUTPUT);
+  digitalWrite(SWITCH_PIN, HIGH);  // センサーをオン
+
+  // グローバル変数を初期化
+  sensor_read_count = 0;
+  last_distance = -1;
 }
 
-void loop() {
+/**
+ * センサーデータを読み込む
+ * 超音波センサーから 4 バイトデータを取得
+ *
+ * @return 有効なセンサーデータを取得できた場合は true
+ */
+bool readSensorData() {
+  // 0xFF フレームヘッダーを探す
   do {
     for (int i = 0; i < 4; i++) {
-      data[i] = MySerial1.read();
+      sensor_data[i] = MySerial1.read();
     }
   } while (MySerial1.read() == 0xff);
 
   MySerial1.flush();
 
-  if (data[0] == 0xff) {
-    int sum;
-    sum = (data[0] + data[1] + data[2]) & 0x00FF;
-    if (sum == data[3]) {
-      distance = (data[1] << 8) + data[2];
-      if (distance > 30) {
-        Serial.print("distance=");
-        Serial.print(distance / 10);
-        Serial.println("cm");
-      } else {
-        Serial.println("Below the lower limit");
-      }
-    } else
-      Serial.println("ERROR");
+  // データが無効な場合は false を返す
+  if (sensor_data[0] != 0xff) {
+    return false;
   }
-  delay(100);
-  count += 1;
 
-  if (count > 100 || distance != -1) // デバッグで＆から変更
-  {
-    // delay(5000);//シリアルコンソール確認用のdelay(本番では不要)
-    Serial.println("start");
-    serial_send(distance / 10);
-    digitalWrite(SWITCH_PIN, LOW); // センサ類をOFFにする
-    esp32c3_deepsleep(
-        SLEEPTIME_SECONDS); // スリープタイム
-                            // スリープ中にGPIO2がHIGHになったら目覚める
+  return true;
+}
+
+/**
+ * センサーデータを解析してログ出力
+ *
+ * @return 有効な距離が解析できた場合は true
+ */
+bool processSensorData() {
+  // センサーのパース関数を使用
+  int distance = 0;
+  if (!parseSensorData(sensor_data, distance)) {
+    Serial.println("エラー: センサーデータのチェックサムが不正");
+    return false;
+  }
+
+  // 距離の下限値をチェック（30 = 3.0 cm）
+  if (distance <= 30) {
+    Serial.println("下限値以下");
+    return false;
+  }
+
+  last_distance = distance / 10.0;  // センチメートル単位に変換
+  Serial.print("距離=");
+  Serial.print(last_distance);
+  Serial.println("cm");
+
+  return true;
+}
+
+/**
+ * データ送信とスリープ
+ */
+void sendAndSleep() {
+  Serial.println("開始");
+  serial_send(last_distance);
+  digitalWrite(SWITCH_PIN, LOW);  // センサーをオフ
+  esp32c3_deepsleep(SLEEPTIME_SECONDS);  // ディープスリープ
+}
+
+/**
+ * メインループ
+ * センサーデータを読み込み、解析し、定期的にデータを送信
+ */
+void loop() {
+  // センサーデータを読み込む
+  if (!readSensorData()) {
+    delay(100);
+    return;
+  }
+
+  // センサーデータを解析
+  bool valid_data = processSensorData();
+  delay(100);
+
+  // 読み込み回数をインクリメント
+  sensor_read_count++;
+
+  // 以下の条件でデータ送信：
+  // 1. 有効なセンサーデータを取得した、または
+  // 2. 読み込み回数が 100 を超えた
+  if (valid_data || sensor_read_count > 100) {
+    sendAndSleep();
   }
 }
