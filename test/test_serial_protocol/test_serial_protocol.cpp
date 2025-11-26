@@ -1,6 +1,6 @@
-#include "unity.h"
-#include "../src/serial_protocol.hpp"
-#include "mock_modem.hpp"
+#include <unity.h>
+#include "../../src/serial_protocol.hpp"
+#include "../common/mock_modem.hpp"
 
 MockModem mock_modem;
 SerialProtocol* protocol = NULL;
@@ -108,18 +108,4 @@ void test_sendDistance_cleanup_failure(void) {
 
   // 失敗する
   TEST_ASSERT_FALSE(result);
-}
-
-int main(void) {
-  UNITY_BEGIN();
-
-  RUN_TEST(test_sendDistance_success);
-  RUN_TEST(test_sendDistance_init_failure);
-  RUN_TEST(test_sendDistance_post_failure);
-  RUN_TEST(test_sendDistance_retry_count);
-  RUN_TEST(test_sendDistance_different_field_ids);
-  RUN_TEST(test_sendDistance_various_distances);
-  RUN_TEST(test_sendDistance_cleanup_failure);
-
-  return UNITY_END();
 }

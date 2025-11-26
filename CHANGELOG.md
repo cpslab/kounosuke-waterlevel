@@ -7,6 +7,37 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2024-11-26
+
+### Changed
+
+- **テストフレームワークの移行**
+  - CMake + 手動 Unity セットアップから PlatformIO 統合テストに移行
+  - `pio test` コマンドで簡単にテスト実行可能
+  - Unity の自動ダウンロード・管理（手動セットアップ不要）
+
+- **テストファイルの再構成**
+  - PlatformIO 標準の階層構造に対応
+  - `test/test_payload/`, `test/test_sensor/`, `test/test_serial_protocol/` に整理
+  - 共有ユーティリティを `test/common/` に集約
+
+- **ドキュメント更新**
+  - TESTING.md：CMake コマンドから `pio test` コマンドに更新
+  - README.md：テスト実行手順を簡潔化
+  - GitHub Actions 統合例を追加
+
+### Removed
+
+- CMakeLists.txt（PlatformIO が自動管理）
+- 古いテストファイル（test/test_*.cpp）
+- 古いモック ファイル（test/mock_*.cpp）
+
+### Technical Details
+
+- `platformio.ini` に `test_framework = unity` を追加
+- Unity の自動インストール・管理（手動 git clone 不要）
+- テスト実行時に Unity が自動的にダウンロード・リンク
+
 ## [0.2.0] - 2024-11-26
 
 ### Added

@@ -105,24 +105,30 @@ pio run -t clean
 
 ### ユニットテストの実行
 
-詳細は **[TESTING.md](TESTING.md)** を参照してください。
+PlatformIO の統合テスト機能を使用しています。詳細は **[TESTING.md](TESTING.md)** を参照してください。
 
 ```bash
-# セットアップ
-git clone https://github.com/ThrowTheSwitch/Unity.git unity
-mkdir build && cd build
-cmake ..
-make
+# すべてのテストを実行
+pio test
 
-# テスト実行
-ctest --verbose
+# 特定のテストを実行
+pio test -f test_payload
+pio test -f test_sensor
+pio test -f test_serial_protocol
+
+# 詳細な出力を確認
+pio test --verbose
+
+# JUnit XML 形式で結果を出力（CI/CD 用）
+pio test --junit-output-path=test-results.xml
 ```
 
 ### テストファイル
 
-- **`test/test_payload.cpp`** - JSON ペイロード生成のテスト（6 テストケース）
-- **`test/test_sensor.cpp`** - センサーデータ解析のテスト（7 テストケース）
-- **`test/test_serial_protocol.cpp`** - プロトコルロジックのテスト（7 テストケース）
+- **`test/test_payload/test_payload.cpp`** - JSON ペイロード生成のテスト（6 テストケース）
+- **`test/test_sensor/test_sensor.cpp`** - センサーデータ解析のテスト（7 テストケース）
+- **`test/test_serial_protocol/test_serial_protocol.cpp`** - プロトコルロジックのテスト（7 テストケース）
+- **`test/common/mock_modem.cpp/hpp`** - テスト用モック モデム実装
 
 ### テスト可能なコンポーネント
 

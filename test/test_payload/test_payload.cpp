@@ -1,5 +1,5 @@
-#include "unity.h"
-#include "../src/payload.hpp"
+#include <unity.h>
+#include "../../src/payload.hpp"
 
 void setUp(void) {
   // 各テスト前の準備
@@ -50,17 +50,4 @@ void test_buildPayload_different_field_ids(void) {
   TEST_ASSERT_EQUAL_STRING("{\"distance\":50.00,\"fieldId\":\"Yokosuka-A1\"}", result1.c_str());
   TEST_ASSERT_EQUAL_STRING("{\"distance\":50.00,\"fieldId\":\"Yokosuka-B2\"}", result2.c_str());
   TEST_ASSERT_NOT_EQUAL_STRING(result1.c_str(), result2.c_str());
-}
-
-int main(void) {
-  UNITY_BEGIN();
-
-  RUN_TEST(test_buildPayload_basic);
-  RUN_TEST(test_buildPayload_with_timestamp);
-  RUN_TEST(test_buildPayload_zero_distance);
-  RUN_TEST(test_buildPayload_large_distance);
-  RUN_TEST(test_buildPayload_precision);
-  RUN_TEST(test_buildPayload_different_field_ids);
-
-  return UNITY_END();
 }

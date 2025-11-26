@@ -1,7 +1,7 @@
 #ifndef MOCK_MODEM_HPP
 #define MOCK_MODEM_HPP
 
-#include "../src/modem.hpp"
+#include "../../src/modem.hpp"
 
 /**
  * テスト用のモック モデム実装

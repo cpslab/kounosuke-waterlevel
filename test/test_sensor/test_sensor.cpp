@@ -1,5 +1,5 @@
-#include "unity.h"
-#include "../src/sensor.hpp"
+#include <unity.h>
+#include "../../src/sensor.hpp"
 
 void setUp(void) {
   // 各テスト前の準備
@@ -102,18 +102,4 @@ void test_parseSensorData_msb_lsb_order(void) {
 
   TEST_ASSERT_TRUE(result);
   TEST_ASSERT_EQUAL_INT(0x1234, distance);
-}
-
-int main(void) {
-  UNITY_BEGIN();
-
-  RUN_TEST(test_parseSensorData_valid_data);
-  RUN_TEST(test_parseSensorData_invalid_header);
-  RUN_TEST(test_parseSensorData_invalid_checksum);
-  RUN_TEST(test_parseSensorData_zero_distance);
-  RUN_TEST(test_parseSensorData_max_distance);
-  RUN_TEST(test_parseSensorData_multiple_values);
-  RUN_TEST(test_parseSensorData_msb_lsb_order);
-
-  return UNITY_END();
 }
