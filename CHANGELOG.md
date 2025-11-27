@@ -7,6 +7,48 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2024-11-27
+
+### Added
+
+- **シリアルコマンドによるディープスリープ時間の動的変更**
+  - `loop()` でシリアル入力を監視し、秒単位の数値でスリープ時間を変更
+  - 例：シリアルで `3000` と入力すると 3 秒、`90000` と入力すると 15 分に変更
+  - バリデーション機能：最小値 3 秒、最大値 3600 秒（1 時間）
+  - 無効な入力はエラーメッセージを表示
+
+### Changed
+
+- **スリープ時間の管理**
+  - `SLEEPTIME_SECONDS` （固定値）から `sleeptime_seconds` （RTC メモリ変数）に変更
+  - デフォルト値を `DEFAULT_SLEEPTIME_SECONDS = 900` として定義
+  - RTC メモリに保存されるため、デバイス再起動後も設定を保持
+
+- **モジュール構成の簡潔化**
+  - `payload.cpp/hpp` を削除（JSON 生成ロジックを `serial_protocol.cpp` に統合）
+  - `ModemInterface` 抽象クラスを削除（`HardwareSerialModem` のみを使用）
+  - テストコード全削除（テストフレームワークを廃止）
+
+- **ドキュメント更新**
+  - README.md：ディープスリープ時間の動的変更方法を追加
+  - README.md：テストセクションを削除
+  - TESTING.md を削除
+
+### Removed
+
+- `src/payload.cpp/hpp`
+- `test/` ディレクトリ全体（テストコード完全削除）
+- `TESTING.md`
+- `platformio.ini` のテスト設定（`test_framework = unity`, `test_build_src = yes`）
+
+### Technical Details
+
+- メモリ使用量：ほぼ変化なし
+  - RAM: 13.5% (44,116 / 327,680 bytes)
+  - Flash: 66.9% (876,846 / 1,310,720 bytes)
+- RTC メモリ領域を活用した永続化機構
+- シリアル入力処理は `handleSerialCommand()` 関数で管理
+
 ## [0.2.2] - 2024-11-26
 
 ### Changed

@@ -34,15 +34,19 @@ pio run -t clean
 
 ### Data Flow
 1. Device wakes from deep sleep
-2. Reads distance from ultrasonic sensor (4-byte protocol: 0xFF header, 2 bytes distance, 1 byte checksum)
-3. Sends JSON payload `{"distance": X, "fieldId": "Yokosuka-A1"}` to `http://uni.soracom.io` via HTTP POST
-4. Powers off sensors and enters deep sleep for 15 minutes (SLEEPTIME_SECONDS = 900)
+2. `loop()` monitors serial input for commands to dynamically change sleep duration
+3. Reads distance from ultrasonic sensor (4-byte protocol: 0xFF header, 2 bytes distance, 1 byte checksum)
+4. Sends JSON payload `{"distance": X, "fieldId": "Yokosuka-A1"}` to `http://uni.soracom.io` via HTTP POST
+5. Powers off sensors and enters deep sleep (configurable via serial, default 15 minutes)
 
 ### Key Functions in `src/main.cpp`
-- `esp32c3_deepsleep()`: Handles WiFi/BT shutdown and enters deep sleep
-- `sendATCommand()`: Sends AT commands to LTE modem with timeout and error handling
-- `sendBody()`: Sends HTTP body data via AT+SHBOD command
-- `serial_send()`: Orchestrates the full HTTP POST sequence to SORACOM
+- `setup()`: Initializes hardware serial, GPIO, and global variables
+- `loop()`: Main loop that monitors serial commands and handles sensor data
+- `handleSerialCommand()`: Processes serial input to dynamically change sleep duration (3-3600 seconds)
+- `readSensorData()`: Reads 4-byte data from ultrasonic sensor
+- `processSensorData()`: Validates sensor data and parses distance
+- `sendAndSleep()`: Sends data via `serial_send()` and enters deep sleep
+- `esp32c3_deepsleep()`: Handles WiFi/BT shutdown and enters deep sleep with configurable duration
 
 ### Libraries
 - `EspSoftwareSerial`: Software serial communication
