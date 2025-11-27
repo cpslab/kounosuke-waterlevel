@@ -9,15 +9,15 @@ class String;
  * SORACOM 経由でデータを送信するための AT コマンドシーケンスを管理
  */
 class SerialProtocol {
- public:
+public:
   struct Config {
     int normalTimeout;
     int postTimeout;
-    const char* url;
-    const char* apn;
+    const char *url;
+    const char *apn;
   };
 
-  SerialProtocol(ModemInterface& modem, const Config& config);
+  SerialProtocol(HardwareSerialModem &modem, const Config &config);
 
   /**
    * HTTP POST 経由で距離データを送信
@@ -25,15 +25,18 @@ class SerialProtocol {
    * @param fieldId フィールド識別子
    * @return 成功時は true、3 回連続失敗時は false
    */
-  bool sendDistance(float distance, const char* fieldId);
+  bool sendDistance(float distance, const char *fieldId);
 
- private:
-  ModemInterface& modem_;
+  String buildPayload(float distance, const char *fieldId,
+                      unsigned long ts = 0);
+
+private:
+  HardwareSerialModem &modem_;
   Config config_;
 
   // AT コマンドシーケンス実行
   bool executeInitSequence();
-  bool executePostSequence(const char* jsonPayload);
+  bool executePostSequence(const char *jsonPayload);
   bool executeCleanupSequence();
 };
 

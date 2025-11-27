@@ -1,11 +1,10 @@
-#include <Arduino.h>
 #include "serial_protocol.hpp"
-#include "payload.hpp"
+#include <Arduino.h>
 
-SerialProtocol::SerialProtocol(ModemInterface& modem, const Config& config)
+SerialProtocol::SerialProtocol(HardwareSerialModem &modem, const Config &config)
     : modem_(modem), config_(config) {}
 
-bool SerialProtocol::sendDistance(float distance, const char* fieldId) {
+bool SerialProtocol::sendDistance(float distance, const char *fieldId) {
   int failureCount = 0;
 
   while (failureCount < 3) {
@@ -46,7 +45,7 @@ bool SerialProtocol::executeInitSequence() {
   }
 
   if (!modem_.sendCommand("AT+CGDCONT=1,\"IP\",\"soracom.io\"\r\n",
-                         config_.normalTimeout)) {
+                          config_.normalTimeout)) {
     Serial.println("エラー: AT+CGDCONT=1");
     return false;
   }
@@ -59,21 +58,21 @@ bool SerialProtocol::executeInitSequence() {
   return true;
 }
 
-bool SerialProtocol::executePostSequence(const char* jsonPayload) {
+bool SerialProtocol::executePostSequence(const char *jsonPayload) {
   if (!modem_.sendCommand("AT+SHCONF=\"URL\",\"http://uni.soracom.io\"\r\n",
-                         config_.normalTimeout)) {
+                          config_.normalTimeout)) {
     Serial.println("エラー: AT+SHCONF URL");
     return false;
   }
 
   if (!modem_.sendCommand("AT+SHCONF=\"BODYLEN\",1024\r\n",
-                         config_.normalTimeout)) {
+                          config_.normalTimeout)) {
     Serial.println("エラー: AT+SHCONF BODYLEN");
     return false;
   }
 
   if (!modem_.sendCommand("AT+SHCONF=\"HEADERLEN\",350\r\n",
-                         config_.normalTimeout)) {
+                          config_.normalTimeout)) {
     Serial.println("エラー: AT+SHCONF HEADERLEN");
     return false;
   }
@@ -83,8 +82,9 @@ bool SerialProtocol::executePostSequence(const char* jsonPayload) {
     return false;
   }
 
-  if (!modem_.sendCommand("AT+SHAHEAD=\"Content-Type\",\"application/json\"\r\n",
-                         config_.normalTimeout)) {
+  if (!modem_.sendCommand(
+          "AT+SHAHEAD=\"Content-Type\",\"application/json\"\r\n",
+          config_.normalTimeout)) {
     Serial.println("エラー: AT+SHAHEAD");
     return false;
   }
@@ -95,7 +95,7 @@ bool SerialProtocol::executePostSequence(const char* jsonPayload) {
   }
 
   if (!modem_.sendCommand("AT+SHREQ=\"http://uni.soracom.io\",3\r\n",
-                         config_.postTimeout)) {
+                          config_.postTimeout)) {
     Serial.println("エラー: AT+SHREQ");
     return false;
   }
@@ -110,4 +110,17 @@ bool SerialProtocol::executeCleanupSequence() {
   }
 
   return true;
+}
+
+String SerialProtocol::buildPayload(float distance, const char *fieldId,
+                                    unsigned long ts) {
+  String payload = String("{\"distance\":") + String(distance, 2) +
+                   ",\"fieldId\":\"" + fieldId + "\"";
+
+  if (ts > 0) {
+    payload += ",\"ts\":" + String(ts);
+  }
+
+  payload += "}";
+  return payload;
 }
